@@ -1,0 +1,6 @@
+.DS_Store
+test/.DS_Store
+test/out/.DS_Store
+test/out/*.jpg
+node_modules
+

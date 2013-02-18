@@ -1,0 +1,27 @@
+{
+  "name": "polyoffset",
+  "version": "0.0.0",
+  "description": "offset a polygon",
+  "main": "offset.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tmpvar/polyoffset.git"
+  },
+  "keywords": [
+    "polygon",
+    "offsetting"
+  ],
+  "author": "Elijah Insua <tmpvar@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "~1.0.0",
+    "vec2": "~1.0.3",
+    "segseg": "~0.2.0"
+  }
+}
