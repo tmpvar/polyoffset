@@ -9,7 +9,7 @@ var segseg = require('segseg');
 
 var drawPoint = function(point, color) {
   ctx.fillStyle = color;
-  ctx.fillRect(point.x-2, point.y-2, 4, 4);
+  ctx.fillRect(point.x-1, point.y-1, 2, 2);
 };
 
 assert.near = function(a, b) {
@@ -34,9 +34,9 @@ var drawPath = function(path, c, stroke) {
   ctx.fill();
   ctx.stroke();
 
-
-  path.forEach(function(point) {
+  path.forEach(function(point, idx) {
     drawPoint(point, 'white');
+    ctx.fillText(idx, point.x-10, point.y-10);
   });
 };
 
@@ -91,7 +91,6 @@ var offset = function(orig, delta, auto) {
       iv = Vec2.fromArray(isect);
 
       var distance = center.subtract(iv, true).length();
-      console.log(Math.abs(distance-Math.abs(delta)) > 0.0000001, distance, iv.toArray(), center.toArray());
       if (Math.abs(distance-Math.abs(delta)) > 0.0000001) {
         drawPoint(iv, 'red');
         throw new Error();
@@ -371,7 +370,7 @@ describe('#offset', function() {
       Vec2(52.49072689819336,162.73686337280276),
       Vec2(50.52802102661132,159.58643728637693),
       Vec2(49.69499999999999,157.94062499999998)
-    ].reverse(), 30);
+    ].reverse(), 20);
   });
 
 });
