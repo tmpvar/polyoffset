@@ -1,67 +1,63 @@
-var edgeNormal = require('./edgeNormal');
+var Polygon = require('polygon');
 var Vec2 = require('vec2');
 var segseg = require('segseg');
-var Polygon = require('polygon');
 
-module.exports = function(poly, delta) {
-  var ret = [], lines = [];
-  var polygon = new Polygon(poly);
-  polygon.each(function(prev, current, next, polyIndex) {
-    var normal = edgeNormal(current, next, delta);
-    var center = next.add(current, true).divide(2)
-    var length = next.subtract(current, true).length();
-    var rotated = normal.normalize(true).skew().multiply((delta < 0) ? length : length*length);
+module.exports = function(poly, delta, cornerFn) {
+  var ret = [], orig = Polygon(poly);
 
-    if (delta < 0 && false) {
-      lines.push([
-        normal.add(center, true).subtract(rotated),
-        normal.add(center, true).add(rotated)
-      ]);
-    } else {
-      lines.push([
-        normal.add(current, true).subtract(rotated),
-        normal.add(next, true).add(rotated)
-      ]);
-    }
+  // clean the polygon
+  orig.rewind(true).each(function(prev, current, next) {
+
+    var diff = current.subtract(prev, true);
+
+    var normal = Vec2(delta, 0);
+    var angle = normal.angleTo(diff);
+    normal = normal.rotate(angle).skew();
+
+    if (delta < 0) { normal.negate(); }
+
+    ret.push(normal.add(prev, true));
+    ret.push(normal.add(current, true));
   });
 
-  lines.forEach(function(line, idx) {
-    if (delta < 0) {
-      lines.forEach(function(inner) {
-        if (inner === line) { return; }
-        var i = segseg(line[0], line[1], inner[0], inner[1]);
-        if (i && i!== true) {
-          var vec = Vec2.fromArray(i);
-          vec.idx = idx;
-          ret.push(vec);
+  var f = [], poly = Polygon(ret), seen = {};
+  poly.each(function(prev, current) {
+    f.push(prev);
+    poly.each(function(ip, ic) {
+      var i = segseg(prev, current, ip, ic);
+
+      if (i && i!==true) {
+        i = Vec2.fromArray(i);
+        if (ip.equal(i) || ic.equal(i)) {
+          return;
         }
-      });
-    } else {
-      var prev = (idx === 0) ? lines[lines.length-1] : lines[idx-1];
 
-      var i = segseg(line[0], line[1], prev[0], prev[1]);
-      i && i!==true && ret.push(Vec2.fromArray(i));
-    }
+        var key = i.x + ':'+ i.y;
+        if (!seen[key]) {
+          f.push(i);
+          seen[key] = true;
+
+          // Exit early when we've found a new intersection
+          return false;
+        }
+      }
+    });
+
+    f.push(current);
   });
 
-  var seen = {};
-  ret = ret.filter(function(a, idx) {
-    var key = a.toArray().join(';');
-    if (seen[key]) {
+  return f.filter(function(current) {
+
+    var contained = orig.containsPoint(current);
+    if ((delta > 0 && contained) || (delta < 0 && !contained)) {
       return false;
-    } else {
-      seen[key] = true;
     }
-    var closest = polygon.closestPointTo(a);
-    if (a.distance(closest)+.0000001 < Math.abs(delta)) {
+
+    var closest = orig.closestPointTo(current);
+
+    if (Math.abs(closest.distance(current) - Math.abs(delta)) > 0.01) {
       return false;
     }
     return true;
   });
-
-  ret = ret.sort(function(a, b) {
-    return b.idx - a.idx;
-  }).reverse();
-
-  return ret;
 };
