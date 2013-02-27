@@ -1,23 +1,44 @@
 var Polygon = require('polygon');
 var Vec2 = require('vec2');
 var segseg = require('segseg');
+var PI2 = Math.PI*2;
 
 module.exports = function(poly, delta, cornerFn) {
   var ret = [], orig = Polygon(poly);
 
   // clean the polygon
   orig.rewind(true).each(function(prev, current, next) {
+    if (prev.equal(current)) {
+      console.log('DUPE')
+      return;
+    }
 
-    var diff = current.subtract(prev, true);
+    var pdiff = current.subtract(prev, true);
+    var ndiff = next.subtract(current, true);
 
     var normal = Vec2(delta, 0);
-    var angle = normal.angleTo(diff);
-    normal = normal.rotate(angle).skew();
+    var pangle = normal.angleTo(pdiff);
+    var nangle = normal.angleTo(ndiff);
 
-    if (delta < 0) { normal.negate(); }
+    var pnormal = normal.clone().rotate(pangle).skew();
+    var nnormal = normal.clone().rotate(nangle).skew();
 
-    ret.push(normal.add(prev, true));
-    ret.push(normal.add(current, true));
+    if (delta < 0) {
+      pnormal.negate();
+      nnormal.negate();
+    }
+
+    var a = pnormal.add(prev, true);
+    var b = pnormal.add(current, true);
+    var c = nnormal.add(current, true);
+
+    ret.push(a);
+    ret.push(b);
+
+    var cornerAngle = current.subtract(prev, true).angleTo(current.subtract(next, true));
+
+    var center = c.add(b, true).divide(2);
+    ret.push(normal.clone().rotate(normal.angleTo(current.subtract(center, true))).negate().add(current));
   });
 
   var f = [], poly = Polygon(ret), seen = {};
