@@ -22,7 +22,7 @@
   "dependencies": {
     "vec2": "~1.1.1",
     "segseg": "~0.2.0",
-    "polygon": "0.0.4"
+    "polygon": "0.0.7"
   },
   "devDependencies": {
     "canvas": "~1.0.0"

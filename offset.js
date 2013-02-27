@@ -4,14 +4,25 @@ var segseg = require('segseg');
 var PI2 = Math.PI*2;
 
 module.exports = function(poly, delta, cornerFn) {
-  var ret = [], orig = Polygon(poly);
+
+  var ret = [],
+      last = null,
+      orig = Polygon(poly.filter(function(a) {
+        var ret = false;
+        if (!last || !last.equal(a)) {
+          ret = true;;
+        }
+
+        last = a;
+        return ret;
+      }));
+
+
 
   // clean the polygon
-  orig.rewind(true).each(function(prev, current, next) {
-    if (prev.equal(current)) {
-      console.log('DUPE')
-      return;
-    }
+  orig.rewind(true).each(function(prev, current, next, idx) {
+
+
 
     var pdiff = current.subtract(prev, true);
     var ndiff = next.subtract(current, true);
@@ -35,10 +46,15 @@ module.exports = function(poly, delta, cornerFn) {
     ret.push(a);
     ret.push(b);
 
-    var cornerAngle = current.subtract(prev, true).angleTo(current.subtract(next, true));
+    var cornerAngle = current.subtract(prev, true).angleTo(next.subtract(current, true));
 
     var center = c.add(b, true).divide(2);
-    ret.push(normal.clone().rotate(normal.angleTo(current.subtract(center, true))).negate().add(current));
+
+    if (cornerAngle <= 0 || normal.angleTo(current.subtract(current, true)) === 0) {
+      var angle = normal.angleTo(current.subtract(current, true));
+      var corner = normal.clone().rotate(normal.angleTo(current.subtract(center, true))).negate();
+      ret.push(corner.add(current));
+    }
   });
 
   var f = [], poly = Polygon(ret), seen = {};
@@ -76,7 +92,7 @@ module.exports = function(poly, delta, cornerFn) {
 
     var closest = orig.closestPointTo(current);
 
-    if (Math.abs(closest.distance(current) - Math.abs(delta)) > 0.01) {
+    if (Math.abs(closest.distance(current) - Math.abs(delta)) > 0.00001) {
       return false;
     }
     return true;
