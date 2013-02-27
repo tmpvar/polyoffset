@@ -7,22 +7,19 @@ module.exports = function(poly, delta, cornerFn) {
 
   var ret = [],
       last = null,
-      orig = Polygon(poly.filter(function(a) {
-        var ret = false;
-        if (!last || !last.equal(a)) {
-          ret = true;;
-        }
+      orig = Polygon(poly).clean().rewind(true);
 
-        last = a;
-        return ret;
-      }));
-
+  // Default to arcs for corners
+  cornerFn = cornerFn || function(current, currentNormal, nextNormal, normal) {
+    var center = nextNormal.add(currentNormal, true).divide(2);
+    var angle = normal.angleTo(current.subtract(current, true));
+    var corner = normal.clone().rotate(normal.angleTo(current.subtract(center, true))).negate();
+    return [corner.add(current)];
+  };
 
 
   // clean the polygon
-  orig.rewind(true).each(function(prev, current, next, idx) {
-
-
+  orig.each(function(prev, current, next, idx) {
 
     var pdiff = current.subtract(prev, true);
     var ndiff = next.subtract(current, true);
@@ -48,12 +45,8 @@ module.exports = function(poly, delta, cornerFn) {
 
     var cornerAngle = current.subtract(prev, true).angleTo(next.subtract(current, true));
 
-    var center = c.add(b, true).divide(2);
-
     if (cornerAngle <= 0 || normal.angleTo(current.subtract(current, true)) === 0) {
-      var angle = normal.angleTo(current.subtract(current, true));
-      var corner = normal.clone().rotate(normal.angleTo(current.subtract(center, true))).negate();
-      ret.push(corner.add(current));
+      Array.prototype.push.apply(ret, cornerFn.call(orig, current, b, c, normal) || []);
     }
   });
 
