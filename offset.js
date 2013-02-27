@@ -10,11 +10,28 @@ module.exports = function(poly, delta, cornerFn) {
       orig = Polygon(poly).clean().rewind(true);
 
   // Default to arcs for corners
-  cornerFn = cornerFn || function(current, currentNormal, nextNormal, normal) {
-    var center = nextNormal.add(currentNormal, true).divide(2);
-    var angle = normal.angleTo(current.subtract(current, true));
-    var corner = normal.clone().rotate(normal.angleTo(current.subtract(center, true))).negate();
-    return [corner.add(current)];
+  cornerFn = cornerFn || function(current, currentNormal, nextNormal, normal, delta) {
+
+    var rads = .5;
+
+    var angleToCurrentNormal = normal.angleTo(current.subtract(currentNormal, true));
+    var angleToNextNormal = normal.angleTo(current.subtract(nextNormal, true));
+    var corner = [];
+
+    if (angleToNextNormal < angleToCurrentNormal) {
+      angleToNextNormal += Math.PI*2
+    }
+
+    var angle = (angleToNextNormal - angleToCurrentNormal);
+    var steps = Math.floor(angle/rads);
+
+    for (var i = 1; i<=steps; i++) {
+
+      console.log(angleToCurrentNormal + (i*rads));
+      corner.push(normal.clone().rotate(angleToNextNormal - (i*rads)).add(current));
+    }
+
+    return corner;
   };
 
 
@@ -46,9 +63,10 @@ module.exports = function(poly, delta, cornerFn) {
     var cornerAngle = current.subtract(prev, true).angleTo(next.subtract(current, true));
 
     if (cornerAngle <= 0 || normal.angleTo(current.subtract(current, true)) === 0) {
-      Array.prototype.push.apply(ret, cornerFn.call(orig, current, b, c, normal) || []);
+      ret = ret.concat(cornerFn.call(orig, current, b, c, normal, delta) || []);
     }
   });
+
 
   var f = [], poly = Polygon(ret), seen = {};
   poly.each(function(prev, current) {
@@ -76,7 +94,7 @@ module.exports = function(poly, delta, cornerFn) {
     f.push(current);
   });
 
-  return f.filter(function(current) {
+  return Polygon(f.filter(function(current) {
 
     var contained = orig.containsPoint(current);
     if ((delta > 0 && contained) || (delta < 0 && !contained)) {
@@ -89,5 +107,5 @@ module.exports = function(poly, delta, cornerFn) {
       return false;
     }
     return true;
-  });
+  })).clean().points;
 };
