@@ -29,7 +29,6 @@ module.exports = function(poly, delta, cornerFn) {
         return;
       }
 
-      console.log(cornerAngle)
       cornerAngle = TAU - cornerAngle;
       steps = (TAU-cornerAngle)/rads;
       rads = -rads;
