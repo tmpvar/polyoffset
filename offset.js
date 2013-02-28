@@ -12,7 +12,7 @@ module.exports = function(poly, delta, cornerFn) {
   // Default to arcs for corners
   cornerFn = cornerFn || function(current, currentNormal, nextNormal, normal, delta) {
 
-    var rads = .5;
+    var rads = .15;
 
     var angleToCurrentNormal = normal.angleTo(current.subtract(currentNormal, true));
     var angleToNextNormal = normal.angleTo(current.subtract(nextNormal, true));
@@ -23,19 +23,32 @@ module.exports = function(poly, delta, cornerFn) {
     }
 
     var angle = (angleToNextNormal - angleToCurrentNormal);
+    if (
+        angle < rads ||
+        Math.abs(Math.PI*2-angle) < rads ||
+        (delta < 0 && angle > Math.PI) ||
+        (delta > 0 && angle < Math.PI) ||
+        (delta > 0 && Math.abs(angle-Math.PI*2) < .2)
+      )
+    {
+      return [];
+    }
+
     var steps = Math.floor(angle/rads);
 
     for (var i = 1; i<=steps; i++) {
-
-      console.log(angleToCurrentNormal + (i*rads));
-      corner.push(normal.clone().rotate(angleToNextNormal - (i*rads)).add(current));
+      var actual = angleToNextNormal - (i*rads);
+      var nextCorner = normal.clone().rotate(actual);
+      if (delta < 0) {
+        nextCorner.negate()
+      }
+      corner.push(nextCorner.add(current));
     }
 
     return corner;
   };
 
 
-  // clean the polygon
   orig.each(function(prev, current, next, idx) {
 
     var pdiff = current.subtract(prev, true);
