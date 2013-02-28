@@ -1,7 +1,14 @@
 var Polygon = require('polygon');
 var Vec2 = require('vec2');
 var segseg = require('segseg');
-var PI2 = Math.PI*2;
+var TAU = Math.PI*2;
+var toTAU = function(rads) {
+  if (rads<0) {
+    rads += TAU;
+  }
+
+  return rads;
+};
 
 module.exports = function(poly, delta, cornerFn) {
 
@@ -10,76 +17,58 @@ module.exports = function(poly, delta, cornerFn) {
       orig = Polygon(poly).clean().rewind(true);
 
   // Default to arcs for corners
-  cornerFn = cornerFn || function(current, currentNormal, nextNormal, normal, delta) {
-
-    var rads = .15;
-
-    var angleToCurrentNormal = normal.angleTo(current.subtract(currentNormal, true));
-    var angleToNextNormal = normal.angleTo(current.subtract(nextNormal, true));
+  cornerFn = cornerFn || function(current, currentNormal, nextNormal, delta, cornerAngle) {
+    var rads = .1;
+    var normal = Vec2(delta, 0);
     var corner = [];
+    var angleToCurrentNormal = toTAU(normal.angleTo(currentNormal.subtract(current, true)));
+    var steps = (TAU-cornerAngle)/rads;
 
-    if (angleToNextNormal < angleToCurrentNormal) {
-      angleToNextNormal += Math.PI*2
-    }
-
-    var angle = (angleToNextNormal - angleToCurrentNormal);
-    if (
-        angle < rads ||
-        Math.abs(Math.PI*2-angle) < rads ||
-        (delta < 0 && angle > Math.PI) ||
-        (delta > 0 && angle < Math.PI) ||
-        (delta > 0 && Math.abs(angle-Math.PI*2) < .2)
-      )
-    {
-      return [];
-    }
-
-    var steps = Math.floor(angle/rads);
-
-    for (var i = 1; i<=steps; i++) {
-      var actual = angleToNextNormal - (i*rads);
-      var nextCorner = normal.clone().rotate(actual);
-      if (delta < 0) {
-        nextCorner.negate()
+    if (delta < 0) {
+      if (cornerAngle > Math.PI/2) {
+        return;
       }
-      corner.push(nextCorner.add(current));
+
+      console.log(cornerAngle)
+      cornerAngle = TAU - cornerAngle;
+      steps = (TAU-cornerAngle)/rads;
+      rads = -rads;
     }
 
+    normal.rotate(angleToCurrentNormal);
+
+    for (var i=0; i<steps; i++) {
+      corner.push(normal.rotate(-rads).add(current, true));
+    }
     return corner;
   };
 
-
   orig.each(function(prev, current, next, idx) {
-
+    var normal = Vec2(delta, 0);
     var pdiff = current.subtract(prev, true);
     var ndiff = next.subtract(current, true);
-
-    var normal = Vec2(delta, 0);
-    var pangle = normal.angleTo(pdiff);
-    var nangle = normal.angleTo(ndiff);
-
-    var pnormal = normal.clone().rotate(pangle).skew();
-    var nnormal = normal.clone().rotate(nangle).skew();
+    var pnormal = normal.clone().rotate(normal.angleTo(pdiff)).skew();
+    var nnormal = normal.clone().rotate(normal.angleTo(ndiff)).skew();
 
     if (delta < 0) {
       pnormal.negate();
       nnormal.negate();
     }
 
-    var a = pnormal.add(prev, true);
     var b = pnormal.add(current, true);
     var c = nnormal.add(current, true);
 
-    ret.push(a);
+    ret.push(pnormal.add(prev, true));
     ret.push(b);
 
-    var cornerAngle = current.subtract(prev, true).angleTo(next.subtract(current, true));
+    var cornerAngle = toTAU(current.subtract(prev, true).angleTo(next.subtract(current, true)));
 
-    if (cornerAngle <= 0 || normal.angleTo(current.subtract(current, true)) === 0) {
-      ret = ret.concat(cornerFn.call(orig, current, b, c, normal, delta) || []);
+    if ((delta < 0 && cornerAngle - TAU/2 < 0) ||
+        (delta > 0 && cornerAngle - TAU/2 > 0))
+    {
+      ret = ret.concat(cornerFn.call(orig, current, b, c, delta, cornerAngle) || []);
     }
   });
-
 
   var f = [], poly = Polygon(ret), seen = {};
   poly.each(function(prev, current) {
@@ -115,7 +104,6 @@ module.exports = function(poly, delta, cornerFn) {
     }
 
     var closest = orig.closestPointTo(current);
-
     if (Math.abs(closest.distance(current) - Math.abs(delta)) > 0.00001) {
       return false;
     }
