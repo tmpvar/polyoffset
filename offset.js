@@ -25,10 +25,6 @@ module.exports = function(poly, delta, cornerFn) {
     var steps = (TAU-cornerAngle)/rads;
 
     if (delta < 0) {
-      if (cornerAngle > Math.PI/2) {
-        return;
-      }
-
       cornerAngle = TAU - cornerAngle;
       steps = (TAU-cornerAngle)/rads;
       rads = -rads;
@@ -95,7 +91,7 @@ module.exports = function(poly, delta, cornerFn) {
     f.push(current);
   });
 
-  return Polygon(f.filter(function(current) {
+  return [Polygon(f.filter(function(current) {
 
     var contained = orig.containsPoint(current);
     if ((delta > 0 && contained) || (delta < 0 && !contained)) {
@@ -107,5 +103,5 @@ module.exports = function(poly, delta, cornerFn) {
       return false;
     }
     return true;
-  })).clean().points;
+  })).clean().points];
 };

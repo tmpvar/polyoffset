@@ -57,51 +57,18 @@ var offset = function(orig, delta, auto) {
     drawPath(orig, '#666', '#aaa');
   }
 
-  var path = _offset(orig, delta)
-  assert.ok(path.length);
-  drawPath(path, '#2A7B24', '#0f0');
+  var paths = _offset(orig, delta)
+  assert.ok(paths.length);
+
+  paths.forEach(function(path) {
+    drawPath(path, '#2A7B24', '#0f0');
+  });
 
   if (delta > 0) {
     drawPath(orig, '#666', '#aaa');
   }
 
-  path.forEach(function(point, idx) {
-    var prevIdx = (idx>0) ? idx-1 : path.length-1;
-    var prevPoint = path[prevIdx];
-    var pathDiff = point.subtract(path[prevIdx], true).skew().normalize();
-
-    // TODO: why do I have to multiply twice here to get an intersection?
-    pathDiff.multiply(delta);
-    pathDiff.multiply(delta/5);
-
-    var isect, isect2, d1, d2, center, iv, iv2;
-
-    // if (delta < 0) {
-    //   center = point.add(prevPoint, true).divide(2);
-    //   drawPath([center, center.add(pathDiff, true)], 'orange')
-    //   isect = segseg(center, center.add(pathDiff, true), orig[prevIdx], orig[idx]);
-    // } else {
-    //   center = orig[idx].add(orig[prevIdx], true).divide(2);
-    //   drawPath([center, center.add(pathDiff, true)], 'orange');
-    //   isect = segseg(center, center.add(pathDiff, true), prevPoint, point);
-
-    // }
-
-    // if (isect) {
-    //   iv = Vec2.fromArray(isect);
-
-    //   var distance = center.subtract(iv, true).length();
-    //   if (Math.abs(distance-Math.abs(delta)) > 0.0000001) {
-    //     drawPoint(iv, 'red');
-    //     throw new Error();
-    //   } else {
-    //     drawPoint(iv, '#ff0');
-    //   }
-    // } else {
-    //   drawPoint(center, 'red');
-    // }
-  });
-  return path;
+  return paths;
 };
 
 var t = function(title, fn) {
@@ -337,5 +304,61 @@ describe('#offset', function() {
       Vec2(49.69499999999999,157.94062499999998)// TODO: fix svgreader
     ].reverse().map(function(v) { return v.multiply(5).subtract(Vec2(100, 400))}), -20);
   });
+
+  t('offset split', function() {
+    var path = offset([
+      Vec2(0, 0),
+      Vec2(200, 0),
+      Vec2(60, 100),
+      Vec2(200, 200),
+      Vec2(0, 200),
+      Vec2(40, 100),
+    ], 20);
+  });
+
+  t('offset split negative', function() {
+    var path = offset([
+      Vec2(0, 0),
+      Vec2(200, 0),
+      Vec2(60, 100),
+      Vec2(200, 200),
+      Vec2(0, 200),
+      Vec2(40, 100),
+    ], -20);
+  });
+
+
+  t('large island', function() {
+    var path = offset([
+      Vec2(0, 0),
+      Vec2(280, 0),
+      Vec2(200, 60),
+      Vec2(100, 50),
+      Vec2(120, 200),
+      Vec2(300, 0),
+      Vec2(300, 200),
+      Vec2(300, 260),
+      Vec2(200, 260),
+      Vec2(0, 200),
+      Vec2(40, 100),
+    ], 20);
+  });
+
+  t('large island negative', function() {
+    var path = offset([
+      Vec2(0, 0),
+      Vec2(280, 0),
+      Vec2(200, 60),
+      Vec2(100, 50),
+      Vec2(120, 200),
+      Vec2(300, 0),
+      Vec2(300, 200),
+      Vec2(300, 260),
+      Vec2(200, 260),
+      Vec2(0, 200),
+      Vec2(40, 100),
+    ], -20);
+  });
+
 
 });
