@@ -25,6 +25,8 @@
     "polygon": "0.0.7"
   },
   "devDependencies": {
-    "canvas": "~1.0.0"
+    "canvas": "~1.0.0",
+    "microtime": "~0.3.3",
+    "benchmark": "~1.0.0"
   }
 }
