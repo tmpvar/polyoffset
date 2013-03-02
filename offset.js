@@ -138,18 +138,22 @@ module.exports = function(poly, delta, cornerFn) {
   });
 
   last = f[0].beamCount;
-  Polygon(f).each(function(p, c, n) {
-    console.log('ITEM', c.beamCount, c.intersection);
-    if (c.beamCount%2 === 1 && !c.intersection && poly.length > 0) {
-      poly.push(c);
-      poly.length && polys.push(poly);
-      poly = [];
-    } else {
-      poly.push(c);
-    }
-    last = c.beamCount;
-  });
 
+  if (delta < 0) {
+    Polygon(f).each(function(p, c, n) {
+      console.log('ITEM', c.beamCount, c.intersection);
+      if (c.beamCount%2 === 1 && !c.intersection && poly.length > 0) {
+        poly.push(c);
+        poly.length && polys.push(poly);
+        poly = [];
+      } else {
+        poly.push(c);
+      }
+      last = c.beamCount;
+    });
+  } else {
+    poly = f;
+  }
   polys.push(poly);
   polys.forEach(function(p) {
     console.log(p.length);
