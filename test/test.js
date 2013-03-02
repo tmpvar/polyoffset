@@ -53,12 +53,37 @@ var savePng = function(outfile, fn) {
 
 var offset = function(orig, delta, auto) {
 
+  for (var x=-100; x<=800; x+=100) {
+    ctx.strokeStyle = "rgba(255,255,255,.3)";
+    ctx.beginPath()
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 600);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.fillText(x, x, -40)
+  }
+
+  for (var y=0; y<=600; y+=100) {
+    ctx.beginPath()
+    ctx.moveTo(0, y);
+    ctx.lineTo(800, y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillText(y, -40, y)
+  }
+
+
   if (delta < 0) {
     drawPath(orig, '#666', '#aaa');
   }
 
   var paths = _offset(orig, delta)
   assert.ok(paths.length);
+
+
+
 
   paths.forEach(function(path) {
     drawPath(path, '#2A7B24', '#0f0');
@@ -67,6 +92,8 @@ var offset = function(orig, delta, auto) {
   if (delta > 0) {
     drawPath(orig, '#666', '#aaa');
   }
+
+
 
   return paths;
 };
@@ -324,7 +351,7 @@ describe('#offset', function() {
       Vec2(200, 200),
       Vec2(0, 200),
       Vec2(40, 100),
-    ], -20);
+    ].map(function(a) { return a.multiply(2) }), -30);
   });
 
 
@@ -341,7 +368,7 @@ describe('#offset', function() {
       Vec2(200, 260),
       Vec2(0, 200),
       Vec2(40, 100),
-    ], 20);
+    ].map(function(a) { return a.multiply(1.5) }), 20);
   });
 
   t('large island negative', function() {
@@ -357,7 +384,7 @@ describe('#offset', function() {
       Vec2(200, 260),
       Vec2(0, 200),
       Vec2(40, 100),
-    ], -20);
+    ].map(function(a) { return a.multiply(2) }), -20);
   });
 
 
