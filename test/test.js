@@ -18,7 +18,7 @@ assert.near = function(a, b) {
   }
 };
 
-var drawPath = function(path, c, stroke) {
+var drawPath = function(path, c, stroke, text) {
   c = c || 'green';
   ctx.strokeStyle = stroke || c;
   ctx.fillStyle = c;
@@ -36,7 +36,11 @@ var drawPath = function(path, c, stroke) {
 
   path.forEach(function(point, idx) {
     drawPoint(point, 'white');
-   //path.length > 2 && ctx.fillText(idx, point.x-10, point.y-20);
+    ctx.save();
+      ctx.translate(point.x+10, point.y+20);
+      ctx.scale(1,-1);
+      text && path.length > 2 && ctx.fillText(idx, 0, 0);
+    ctx.restore();
   });
 };
 
@@ -53,27 +57,29 @@ var savePng = function(outfile, fn) {
 
 var offset = function(orig, delta, auto) {
 
-  for (var x=-100; x<=800; x+=100) {
+
+  for (var x=0; x<=700; x+=100) {
     ctx.strokeStyle = "rgba(255,255,255,.3)";
     ctx.beginPath()
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, 600);
+    ctx.lineTo(x, 500);
     ctx.closePath();
     ctx.stroke();
 
     ctx.fillStyle = '#fff';
-    ctx.fillText(x, x, -40)
+    ctx.fillText(x, x, 540);
   }
 
-  for (var y=0; y<=600; y+=100) {
+  for (var y=600; y>=0; y-=100) {
     ctx.beginPath()
-    ctx.moveTo(0, y);
-    ctx.lineTo(800, y);
+    ctx.moveTo(0, 600-y);
+    ctx.lineTo(700, 600-y);
     ctx.closePath();
     ctx.stroke();
-    ctx.fillText(y, -40, y)
+    ctx.fillText(y-100, -40, 600-y);
   }
-
+  ctx.scale(1, -1);
+  ctx.translate(0, -500);
 
   if (delta < 0) {
     drawPath(orig, '#666', '#aaa');
@@ -86,7 +92,7 @@ var offset = function(orig, delta, auto) {
 
 
   paths.forEach(function(path) {
-    drawPath(path, '#2A7B24', '#0f0');
+    drawPath(path, '#2A7B24', '#0f0', true);
   });
 
   if (delta > 0) {
@@ -270,7 +276,7 @@ describe('#offset', function() {
       Vec2(54.86754043579101,165.64202407836913),
       Vec2(52.49072689819336,162.73686337280276),
       Vec2(50.52802102661132,159.58643728637693),
-    ].reverse().map(function(v) { return v.multiply(5).subtract(Vec2(100, 400))}), 20);
+    ].reverse().map(function(v) { return v.multiply(Vec2(5, -5)).add(Vec2(-200, 900))}), 20);
   });
 
   t('offset j negative', function() {
@@ -328,30 +334,29 @@ describe('#offset', function() {
       Vec2(54.86754043579101,165.64202407836913),
       Vec2(52.49072689819336,162.73686337280276),
       Vec2(50.52802102661132,159.58643728637693),
-      Vec2(49.69499999999999,157.94062499999998)// TODO: fix svgreader
-    ].reverse().map(function(v) { return v.multiply(5).subtract(Vec2(100, 400))}), -20);
+    ].reverse().map(function(v) { return v.multiply(Vec2(5, -5)).add(Vec2(-200, 900))}), -20);
   });
 
   t('offset split', function() {
     var path = offset([
-      Vec2(0, 0),
-      Vec2(200, 0),
-      Vec2(60, 100),
-      Vec2(200, 200),
-      Vec2(0, 200),
-      Vec2(40, 100),
-    ], 20);
+      Vec2(100, 100),
+      Vec2(400, 100),
+      Vec2(225, 200),
+      Vec2(400, 400),
+      Vec2(100, 400),
+      Vec2(185, 200),
+    ], 30);
   });
 
   t('offset split negative', function() {
     var path = offset([
-      Vec2(0, 0),
-      Vec2(200, 0),
-      Vec2(60, 100),
-      Vec2(200, 200),
-      Vec2(0, 200),
-      Vec2(40, 100),
-    ].map(function(a) { return a.multiply(2) }), -30);
+      Vec2(100, 100),
+      Vec2(400, 100),
+      Vec2(225, 200),
+      Vec2(400, 400),
+      Vec2(100, 400),
+      Vec2(185, 200),
+    ], -30);
   });
 
 
@@ -368,7 +373,7 @@ describe('#offset', function() {
       Vec2(200, 260),
       Vec2(0, 200),
       Vec2(40, 100),
-    ].map(function(a) { return a.multiply(1.5) }), 20);
+    ].map(function(a) { return a.multiply(1.5).add(Vec2(50, 50)) }), 20);
   });
 
   t('large island negative', function() {
@@ -384,8 +389,6 @@ describe('#offset', function() {
       Vec2(200, 260),
       Vec2(0, 200),
       Vec2(40, 100),
-    ].map(function(a) { return a.multiply(2) }), -20);
+    ].map(function(a) { return a.multiply(1.5).add(Vec2(50, 50)) }), -20);
   });
-
-
 });
