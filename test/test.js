@@ -88,11 +88,8 @@ var offset = function(orig, delta, auto) {
   var paths = _offset(orig, delta)
   assert.ok(paths.length);
 
-
-
-
   paths.forEach(function(path) {
-    drawPath(path, '#2A7B24', '#0f0', true);
+    drawPath(path, '#2A7B24', '#0f0');
   });
 
   if (delta > 0) {

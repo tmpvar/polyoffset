@@ -14,7 +14,8 @@ module.exports = function(poly, delta, cornerFn) {
 
   var ret = [],
       last = null,
-      orig = Polygon(poly).clean().rewind(true);
+      orig = Polygon(poly).clean().rewind(true),
+      skip = false;
 
   // Default to arcs for corners
   cornerFn = cornerFn || function(current, currentNormal, nextNormal, delta, cornerAngle) {
@@ -50,20 +51,30 @@ module.exports = function(poly, delta, cornerFn) {
       nnormal.negate();
     }
 
+    var a = pnormal.add(prev, true)
     var b = pnormal.add(current, true);
     var c = nnormal.add(current, true);
-
-    ret.push(pnormal.add(prev, true));
-    ret.push(b);
+    var d = nnormal.add(next, true);
 
     var cornerAngle = toTAU(current.subtract(prev, true).angleTo(next.subtract(current, true)));
 
     if ((delta < 0 && cornerAngle - TAU/2 < 0) ||
         (delta > 0 && cornerAngle - TAU/2 > 0))
     {
+      !skip && ret.push(a);
+      !skip && ret.push(b);
       ret = ret.concat(cornerFn.call(orig, current, b, c, delta, cornerAngle) || []);
+      skip = false;
+    } else {
+      var i = segseg(a, b, c, d);
+      if (i && i!==true) {
+        console.log(i);
+        ret.push(Vec2.fromArray(i));
+        skip = true;
+      }
     }
   });
+
 
   var f = [], poly = Polygon(ret), seen = {};
   poly.each(function(prev, current) {
