@@ -1,4 +1,4 @@
-var Polygon = require('polygon');
+var Polygon = require('polygon.clip');
 var Vec2 = require('vec2');
 var segseg = require('segseg');
 var TAU = Math.PI*2;
@@ -67,51 +67,53 @@ module.exports = function(poly, delta, cornerFn) {
     } else {
       var i = segseg(a, b, c, d);
       if (i && i!==true) {
-        console.log(i);
+        console.log(i, Vec2.fromArray(i).distance(c));
         ret.push(Vec2.fromArray(i));
         skip = true;
       }
     }
   });
 
+  var subjectPoly = Polygon(ret),
+      clipPoly = subjectPoly.clone(),
+      subjectList = subjectPoly.createLinkedList(),
+      clipList = clipPoly.createLinkedList(),
+      results = [],
+      result;
 
-  var f = [], poly = Polygon(ret), seen = {};
-  poly.each(function(prev, current) {
-    f.push(prev);
-    poly.each(function(ip, ic) {
-      var i = segseg(prev, current, ip, ic);
+  var ensureDistance = function(array) {
 
-      if (i && i!==true) {
-        i = Vec2.fromArray(i);
-        if (ip.equal(i) || ic.equal(i)) {
-          return;
-        }
-
-        var key = i.x + ':'+ i.y;
-        if (!seen[key]) {
-          f.push(i);
-          seen[key] = true;
-
-          // Exit early when we've found a new intersection
-          return false;
-        }
+    return array.filter(function(current) {
+      if (!current) {
+        return false;
       }
-    });
 
-    f.push(current);
+      var contained = orig.containsPoint(current);
+      if ((delta > 0 && contained) || (delta < 0 && !contained)) {
+        return false;
+      }
+
+      var closest = orig.closestPointTo(current);
+      console.log('CLOSEST', closest.toArray(), current.toArray(), closest.distance(current));
+      if (Math.abs(closest.distance(current) - Math.abs(delta)) > 0.00001) {
+        return false;
+      }
+      return true;
+    });
+  };
+
+
+  var polys = subjectPoly.clip(clipPoly, 'self');
+
+  if (!polys.length) {
+    return [ensureDistance(subjectPoly.points)];
+  }
+
+  polys.forEach(function(poly) {
+    results.push(poly.points);
+    // var points = ensureDistance(poly.points);
+    // points && points.length && results.push(points);
   });
 
-  return [Polygon(f.filter(function(current) {
-
-    var contained = orig.containsPoint(current);
-    if ((delta > 0 && contained) || (delta < 0 && !contained)) {
-      return false;
-    }
-
-    var closest = orig.closestPointTo(current);
-    if (Math.abs(closest.distance(current) - Math.abs(delta)) > 0.00001) {
-      return false;
-    }
-    return true;
-  })).clean().points];
+  return results;
 };
