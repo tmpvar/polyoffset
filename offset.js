@@ -61,7 +61,6 @@ module.exports = function(poly, delta, cornerFn) {
     if ((delta < 0 && cornerAngle - TAU/2 < 0) ||
         (delta > 0 && cornerAngle - TAU/2 > 0))
     {
-      !skip && ret.push(a);
       !skip && ret.push(b);
       ret = ret.concat(cornerFn.call(orig, current, b, c, delta, cornerAngle) || []);
       skip = false;
