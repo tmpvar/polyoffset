@@ -1,7 +1,8 @@
 var Polygon = require('polygon.clip');
 var Vec2 = require('vec2');
 var segseg = require('segseg');
-var TAU = Math.PI*2;
+var PI = Math.PI;
+var TAU = PI*2;
 var toTAU = function(rads) {
   if (rads<0) {
     rads += TAU;
@@ -14,9 +15,68 @@ module.exports = function(poly, delta, cornerFn) {
 
   var ret = [],
       last = null,
-      orig = Polygon(poly).clean().rewind(true),
-      skip = false;
+      bisectors = [],
+      orig = Polygon(poly).clean().rewind(true);
 
+  // Compute bisectors
+  orig.each(function(prev, current, next, idx) {
+    var e1 = current.subtract(prev, true).normalize();
+    var e2 = current.subtract(next, true).normalize();
+
+    var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+
+    if (delta > 0) {
+      length = -length;
+    }
+
+    var cornerAngle = toTAU(current.subtract(prev, true).angleTo(next.subtract(current, true)));
+    var angleToCorner = toTAU(current.subtract(prev, true).angleTo(Vec2(1, 0)));
+    var bisector = Vec2(length, 0).rotate(TAU/4 + cornerAngle/2 - angleToCorner);
+
+
+    if ((delta < 0 && cornerAngle - TAU/2 < 0) ||
+        (delta > 0 && cornerAngle - TAU/2 > 0))
+    {
+      bisector.add(current);
+    } else {
+      bisector = current.subtract(bisector, true);
+    }
+
+    current.bisector = bisector;
+    bisector.point = current;
+    ret.push(bisector);
+  });
+
+  return [ret];
+/*
+
+  var out = [], skip = false;
+  Polygon(ret).each(function(p, c, n) {
+    console.log(c.toArray())
+    // if (skip) {
+    //   skip=false;
+    //   return;
+    // }
+    // var i = segseg(p, c, c, n);
+
+    // if (i) {
+    //   if (i===true) {
+    //     console.log('FUCK')
+    //   }
+    //   //skip=true;
+
+    //   out.push(Vec2.fromArray(i));
+    // } else {
+    //   out.push(c);
+    // }
+  });
+
+
+return [Polygon(ret).dedupe().points];
+
+
+
+/*
   // Default to arcs for corners
   cornerFn = cornerFn || function(current, currentNormal, nextNormal, delta, cornerAngle) {
     var rads = .1;
@@ -38,6 +98,9 @@ module.exports = function(poly, delta, cornerFn) {
     }
     return corner;
   };
+
+
+
 
   orig.each(function(prev, current, next, idx) {
     var normal = Vec2(delta, 0);
@@ -116,4 +179,5 @@ module.exports = function(poly, delta, cornerFn) {
   });
 
   return results;
+  */
 };
