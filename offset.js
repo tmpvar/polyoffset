@@ -11,6 +11,23 @@ var toTAU = function(rads) {
   return rads;
 };
 
+var isect = function(a, b, c, d) {
+  var i = segseg(a,b,c,d);
+  if (i && i!==true) {
+    i = Vec2.fromArray(i);
+    if (
+      !i.equal(a) &&
+      !i.equal(b) &&
+      !i.equal(c) &&
+      !i.equal(d)
+    )
+    {
+      i.intersection = true;
+      return i;
+    }
+  }
+};
+
 module.exports = function(poly, delta, cornerFn) {
 
   var ret = [],
@@ -39,87 +56,29 @@ module.exports = function(poly, delta, cornerFn) {
     } else {
       bisector = current.subtract(bisector, true);
     }
-
+    bisector.cornerAngle = cornerAngle;
     current.bisector = bisector;
     bisector.point = current;
     ret.push(bisector);
   });
 
+  // Identify bisector intersections and collect edges
   var out = [];
-  Polygon(ret).each(function(p, c, n, idx) {
-
-
-    out.push(c);
-    var count = 0;
-    do {
-      var compare = out[out.length-(count+1)];
-      var i = segseg(compare, compare.point, n, n.point);
-      if (i && i!==true) {
-        count++;
-      }
-
-    } while(i && out.length)
-
-    if (count > 1) {
-      while(count--) { out.pop() }
+  Polygon(ret).each(function(prev, current, next) {
+    var i = isect(prev, prev.point, current, current.point);
+    if (i) {
+      i.intersection = true;
+      i.prev = prev;
+      i.next = current;
+      prev.next = i;
+      current.prev = i;
+      out.push(i);
+    } else {
+      prev.next = current;
+      current.prev = prev;
     }
+    out.push(current);
   });
 
-  var f = [];
-  Polygon(out).rewind(false).each(function(p, c, n, idx) {
-    f.push(c);
-    var count = 0;
-    do {
-      var compare = f[f.length-(count+1)];
-      var i = segseg(compare, compare.point, n, n.point);
-      if (i && i!==true) {
-        count++;
-      }
-
-    } while(i && f.length)
-
-    if (count > 1) {
-      while(count--) { f.pop() }
-    }
-  });
-
-
-  out = f;
-  f = [];
-  var found = false;
-  Polygon(out).rewind(false).each(function(p, c, n, idx) {
-    f.push(c);
-    var count = 0;
-    if (!found) {
-      do {
-        var compare = f[f.length-(count+1)];
-        var i = segseg(compare, compare.point, n, n.point);
-        if (i && i!==true) {
-          f.pop();
-          found = true;
-        }
-      } while(i && f.length)
-    }
-  });
-
-  out = f;
-  f = [];
-  found = false;
-  Polygon(out).rewind(true).each(function(p, c, n, idx) {
-    f.push(c);
-    var count = 0;
-    if (!found) {
-      do {
-        var compare = f[f.length-(count+1)];
-        var i = segseg(compare, compare.point, n, n.point);
-        if (i && i!==true) {
-          f.pop();
-          found = true;
-        }
-      } while(i && f.length)
-    }
-  });
-
-
-  return [Polygon(f).rewind(true).points];
+  return [out];
 };

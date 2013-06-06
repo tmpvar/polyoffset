@@ -2,11 +2,15 @@ var assert = require('assert');
 var _offset = require('../offset');
 var Vec2 = require('vec2');
 var Canvas = require('canvas');
-var canvas = new Canvas(800, 600);
+var w = 1000;
+var canvas = new Canvas(w, w);
 var ctx = canvas.getContext('2d');
 var fs = require('fs');
+var path = require('path');
 var segseg = require('segseg');
-
+var glob = require('glob');
+var SVGReader = require('../svgreader');
+var Polygon = require('polygon');
 var drawPoint = function(point, color) {
   ctx.fillStyle = color;
   ctx.fillRect(point.x-1, point.y-1, 2, 2);
@@ -35,7 +39,7 @@ var drawPath = function(path, c, stroke, text) {
   ctx.stroke();
 
   path.forEach(function(point, idx) {
-    drawPoint(point, 'white');
+//    point.intersection && drawPoint(point, 'white');
     ctx.save();
       ctx.translate(point.x+10, point.y+20);
       ctx.scale(1,-1);
@@ -57,29 +61,8 @@ var savePng = function(outfile, fn) {
 
 var offset = function(orig, delta, auto) {
 
-
-  for (var x=0; x<=700; x+=100) {
-    ctx.strokeStyle = "rgba(255,255,255,.3)";
-    ctx.beginPath()
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 500);
-    ctx.closePath();
-    ctx.stroke();
-
-    ctx.fillStyle = '#fff';
-    ctx.fillText(x, x, 540);
-  }
-
-  for (var y=600; y>=0; y-=100) {
-    ctx.beginPath()
-    ctx.moveTo(0, 600-y);
-    ctx.lineTo(700, 600-y);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fillText(y-100, -40, 600-y);
-  }
-  ctx.scale(1, -1);
-  ctx.translate(0, -500);
+  // ctx.scale(1, -1);
+  // ctx.translate(0, -500);
 
   if (delta < 0) {
     drawPath(orig, '#666', '#aaa');
@@ -103,10 +86,35 @@ var t = function(title, fn) {
   var fileTitle = title.replace(/ /g, '-');
   it(title, function(done) {
     ctx.fillStyle = "black";
-    ctx.fillRect(0,0, 800, 600);
+    ctx.fillRect(0,0, w,w);
+
+
 
     ctx.save()
     ctx.translate(50, 50);
+
+    for (var x=0; x<=1000; x+=100) {
+      ctx.strokeStyle = "rgba(255,255,255,.3)";
+      ctx.beginPath()
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 1000);
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.fillText(x, x, 540);
+    }
+
+    for (var y=1000; y>0; y-=100) {
+      ctx.beginPath()
+      ctx.moveTo(0, 1000-y);
+      ctx.lineTo(1000, 1000-y);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillText(y-100, -40, 600-y);
+    }
+
+
     try {
       fn();
 
@@ -124,6 +132,8 @@ var t = function(title, fn) {
 
 
 describe('#offset', function() {
+
+
   t('offset square', function(fn) {
     var path = offset([
       Vec2(20, 20),
@@ -662,4 +672,27 @@ describe('#offset', function() {
       Vec2(30,144.097),
     ], 20);
   });
+
+
+  // Add more tests based on svg
+  var files = glob.sync(__dirname + '/svg/*.svg');
+  files.forEach(function(file) {
+    var svg = fs.readFileSync(file).toString();
+    var vecs = SVGReader.parse(svg).allcolors;
+    var name = path.basename(file);
+
+    [2, -2].forEach(function(delta) {
+      t(name + ' ' + delta, function() {
+        var gcode = [];
+
+        vecs.forEach(function(group) {
+          var path = offset(Polygon(group).clone().points.map(function(point) { return point.divide(1.5); }), delta);
+
+        });
+      });
+    });
+  });
+
+
+
 });
